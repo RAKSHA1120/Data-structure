@@ -1,0 +1,96 @@
+struct node{
+    int nodeIndex;
+    int quietVal;
+    struct node* next;
+};
+struct Graph{
+    int vSize;
+    struct node** AdjL;
+};
+struct StackNode{
+    int nodeIndex;
+    struct StackNode* next;
+};
+struct Stack{
+    struct StackNode* top;
+};
+void push(struct Stack* stack,int node){
+    struct StackNode* newNode=malloc(sizeof(struct StackNode));
+    newNode->nodeIndex=node;
+    newNode->next=stack->top;
+    stack->top=newNode;
+}
+int pop(struct Stack* stack){
+    struct StackNode* toDelete=stack->top;
+    stack->top=stack->top->next;
+    int returnNode=toDelete->nodeIndex;
+    free(toDelete);
+    return returnNode;
+}
+void addEdge(struct Graph* graph,int src,int dst,int* quiet){
+    struct node* newNode=malloc(sizeof(struct node));
+    newNode->nodeIndex=dst;
+    newNode->quietVal=quiet[dst];
+    newNode->next=graph->AdjL[src];
+    graph->AdjL[src]=newNode;
+}
+int DFS(struct Graph* graph,int node,int* quiet){
+    int min,minNode;
+    //create visited array
+    int* visited=malloc(graph->vSize*sizeof(int));
+    for(int i=0;i<graph->vSize;i++){
+        visited[i]=0;
+    }
+    //create empty stack
+    struct Stack stack;
+    stack.top=NULL;
+    //push node to stack
+    visited[node]=1;
+    push(&stack,node);
+    minNode=node;min=quiet[node];
+    while(stack.top){//while stack is not empty
+        int node=(stack.top)->nodeIndex;//peek top of stack
+        if(quiet[node]<min){
+            minNode=node;
+            min=quiet[node];
+        }
+        //push any adjacent neighbour to stack
+        struct node* currentVertex=graph->AdjL[node];
+        while(currentVertex){
+            if(!visited[currentVertex->nodeIndex]){
+                visited[currentVertex->nodeIndex]=1;
+                push(&stack,currentVertex->nodeIndex);
+                break;
+            }
+            currentVertex=currentVertex->next;
+        }
+        if(currentVertex==NULL){//reached end of list, no unvisited adjacent node
+            pop(&stack);//pop to backtrack
+        }
+    }
+    return minNode;
+}
+int* loudAndRich(int** richer, int richerSize, int* richerColSize, int* quiet, int quietSize, int* returnSize) {
+    //create a directed graph
+    struct Graph graph;
+    graph.vSize=quietSize;
+    graph.AdjL=malloc(graph.vSize*sizeof(struct node*));
+    for(int i=0;i<graph.vSize;i++){
+        graph.AdjL[i]=NULL;
+    }
+    //convert richer array(an edges list) to an adjacency list
+    //nodeA(src) has an edge to nodeB(dst) if nodeB is richer than nodeA
+    for(int i=0;i<richerSize;i++){
+        int src=richer[i][1];
+        int dst=richer[i][0];
+        addEdge(&graph,src,dst,quiet);
+    }
+    //create return array
+    int* leastQuietNeighbours=malloc(graph.vSize*sizeof(int));
+    *returnSize=graph.vSize;
+    //depth first search on each node to find connected node with lowest quietVal
+    for(int node=0;node<graph.vSize;node++){
+        leastQuietNeighbours[node]=DFS(&graph,node,quiet);
+    }
+    return leastQuietNeighbours;
+}
