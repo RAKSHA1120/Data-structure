@@ -1,0 +1,38 @@
+typedef struct node {
+    int vertex;
+    struct node *next;
+} node;
+
+void dfs(node* adjList[], bool* visited, bool* answer, int current, int target, int j) {
+    visited[current] = true;
+    if (current == target) {
+        answer[j] = true;
+        return;
+    }
+
+    for (node* temp = adjList[current]; temp; temp = temp->next) {
+        int val = temp->vertex;
+        if (!visited[val]) {
+            dfs(adjList, visited, answer, val, target, j);
+        }
+    }
+}
+
+bool* checkIfPrerequisite(int numCourses, int** prerequisites, int prerequisitesSize, int* prerequisitesColSize, int** queries, int queriesSize, int* queriesColSize, int* returnSize) {
+    bool* answer = calloc(sizeof(bool), queriesSize);
+    *returnSize = queriesSize;
+    node* adjList[numCourses] = {};
+    for (int i = 0; i < prerequisitesSize; i++) {
+        node* newNode = malloc(sizeof(node));
+        newNode->vertex = prerequisites[i][1];
+        int index = prerequisites[i][0];
+        newNode->next = adjList[index];
+        adjList[index] = newNode;
+    }
+    for (int j = 0; j < queriesSize; j++) {
+        bool* visited = calloc(sizeof(bool), numCourses);
+        dfs(adjList, visited, answer, queries[j][0], queries[j][1], j);
+    }
+
+    return answer;
+}
