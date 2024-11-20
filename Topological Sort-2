@@ -1,0 +1,93 @@
+#include <stdbool.h>
+
+typedef struct node {
+    int val;
+    struct node* next;
+} node;
+
+typedef struct {
+    node* top;
+    int size;
+} stack;
+
+void push(stack* S, int val) {
+    node* Node = malloc(sizeof(node));
+    Node->val = val;
+    Node->next = S->top;
+    S->top = Node;
+    S->size++;
+}
+
+bool helper(int** prerequisites, bool* visited, int prerequisitesSize, int index) {
+    for (int i = 0; i < prerequisitesSize; i++) {
+        if (prerequisites[i][0] == index) {
+            if (!visited[prerequisites[i][1]]) {
+                return false;
+            }
+        }
+    }
+    return true; //if no prerequisites
+}
+
+//Return true if cycles are detected, false otherwise
+bool dfs(node** adjlist, int** prerequisites, bool* visited, bool* path, stack* S, int current, int prerequisitesSize) {
+    visited[current] = true;
+    path[current] = true;
+    push(S, current);
+
+    for (node* curr = adjlist[current]; curr; curr = curr->next) {
+        if (!visited[curr->val] && helper(prerequisites, visited, prerequisitesSize, curr->val)) {
+            if (dfs(adjlist, prerequisites, visited, path, S, curr->val, prerequisitesSize)) {
+                return true;
+            }
+        } else if (path[curr->val]) {
+            return true;
+        }
+    }
+
+    path[current] = false;
+    return false;
+}
+
+int* findOrder(int numCourses, int** prerequisites, int prerequisitesSize, int* prerequisitesColSize, int* returnSize) {
+    node* adjlist[numCourses];
+    for (int i = 0; i < numCourses; i++) {
+        adjlist[i] = NULL;
+    }
+
+    for (int i = 0; i < prerequisitesSize; i++) {
+        node* Node = malloc(sizeof(node));
+        Node->val = prerequisites[i][0];
+        Node->next = adjlist[prerequisites[i][1]];
+        adjlist[prerequisites[i][1]] = Node;
+    }
+
+    bool* visited = calloc(sizeof(bool), numCourses);
+    bool* path = calloc(sizeof(bool), numCourses);
+    int* res = malloc(sizeof(int) * numCourses);
+    stack S; S.top = NULL; S.size = 0;
+
+    for (int i = 0; i < numCourses; i++) {
+        if (!visited[i] && helper(prerequisites, visited, prerequisitesSize, i)) {
+            if(dfs(adjlist, prerequisites, visited, path, &S, i, prerequisitesSize)) {
+                return NULL;
+            }
+        }
+    }
+
+    if (S.size < numCourses) {
+        *returnSize = 0;
+        return NULL;
+    }
+
+    *returnSize = S.size;
+    int i = S.size - 1; node* curr = S.top;
+    while (i > -1 && curr) {
+        res[i] = curr->val;
+        curr = curr->next;
+        i--;
+    }
+    return res;
+}
+
+ 
